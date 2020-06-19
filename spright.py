@@ -14,6 +14,22 @@ from query import compute_delayed_wht, get_Ms, get_b
 from reconstruct import singleton_detection
 
 class Decoder:
+    '''
+    Class to store decoder configurations and carry out decoding.
+
+    Attributes
+    ----------
+    query_method : str
+    The method to generate the sparsity coefficient and the subsampling matrices.
+    Currently implemented methods: 
+        "simple" : choose some predetermined matrices based on problem size.
+
+    reconstruct_method : str
+    The method to detect singletons.
+    Currently implemented methods:
+        "noiseless" : decode according to [2], section 4.2, with the assumption the signal is noiseleess
+        "mle" : naive noisy decoding; decode by taking the maximum-likelihood singleton that could be at that bin.
+    '''
     def __init__(self, query_method, reconstruct_method):
         self.query_method = query_method
         self.reconstruct_method = reconstruct_method
@@ -50,7 +66,7 @@ class Decoder:
             
         # subsample, make the observation [U] and delays [D] matrices
         for M in Ms:
-            U, D = compute_delayed_wht(signal, M, num_delays, force_identity_like=False)
+            U, D = compute_delayed_wht(signal, M, num_delays, force_identity_like=(self.reconstruct_method == "noiseless"))
             Us.append(U)
             Ss.append((-1) ** (D @ K)) # offset signature matrix
         
@@ -166,7 +182,7 @@ class Decoder:
                 # average out noise; e.g. in the example in 3.2, U1[11] and U2[11] are the same singleton,
                 # so averaging them reduces the effect of noise.
         
-        wht /= 2 ** (signal.n / b) # should maybe be n - b? in the example it's n = 4 and b = 2 so same either way, but should double check.
+        wht /= 2 ** (signal.n - b)
         return wht
 
 if __name__ == "__main__":
@@ -174,4 +190,4 @@ if __name__ == "__main__":
     test_signal = Signal(4, [4, 6, 10, 15], strengths=[2, 4, 1, 1], noise_sd=0.01)
     decoder = Decoder(query_method="simple", reconstruct_method="mle")
     residual = decoder.decode(test_signal) - test_signal.signal_w
-    print("Accurately decoded: {0}".format(np.inner(residual, residual) <= test_signal.noise_sd))
+    print("Residual energy: {0}".format(np.inner(residual, residual),))

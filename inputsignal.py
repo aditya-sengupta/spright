@@ -1,3 +1,7 @@
+'''
+Class for common interface to an input signal.
+'''
+
 import numpy as np
 from utils import fwht
 
