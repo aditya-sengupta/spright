@@ -1,3 +1,10 @@
+'''
+Methods for the reconstruction engine; specifically, to
+
+1. carry out singleton detection
+2. get the cardinalities of all bins in a subsampling group (debugging only).
+'''
+
 import numpy as np
 from utils import dec_to_bin
 from query import compute_delayed_wht

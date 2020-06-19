@@ -1,3 +1,7 @@
+'''
+Utility functions.
+'''
+
 import numpy as np
 
 def fwht(x):

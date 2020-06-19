@@ -1,3 +1,11 @@
+'''
+Methods for the query generator: specifically, to
+
+1. generate sparsity coefficients b and subsampling matrices M
+2. get the indices of a signal subsample
+3. compute a subsampled and delayed Walsh-Hadamard transform.
+'''
+
 import numpy as np
 
 from utils import fwht, bin_to_dec, dec_to_bin, binary_ints
