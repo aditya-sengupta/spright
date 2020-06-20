@@ -34,7 +34,6 @@ def get_b(signal, method="simple"):
         "simple" : get_b_simple
     }.get(method)(signal)
 
-
 def get_Ms_simple(n, b, num_to_get=None):
     if n % b != 0:
         raise NotImplementedError("b must be exactly divisible by n")
@@ -48,6 +47,14 @@ def get_Ms_simple(n, b, num_to_get=None):
         Ms.append(M)
 
     return Ms
+
+def get_Ms_BCH(n, b, num_to_get=None):
+    if n % b != 0:
+        raise NotImplementedError("b must be exactly divisible by n")
+    if num_to_get is None:
+        num_to_get = n // b
+
+    
 
 def get_Ms(n, b, num_to_get=None, method="simple"):
     '''

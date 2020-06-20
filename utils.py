@@ -3,6 +3,7 @@ Utility functions.
 '''
 
 import numpy as np
+from functools import partial
 
 def fwht(x):
     """Recursive implementation of the 1D Cooley-Tukey FFT"""
@@ -28,11 +29,19 @@ def dec_to_bin(x, num_bits):
     u = [int(i) for i in u]
     return np.array(u)
 
-def binary_ints(n):
+def binary_ints(m):
     '''
-    Returns a matrix where row 'i' is dec_to_bin(i, n), for i from 0 to 2 ** n - 1.
+    Returns a matrix where row 'i' is dec_to_bin(i, m), for i from 0 to 2 ** m - 1.
     From https://stackoverflow.com/questions/28111051/create-a-matrix-of-binary-representation-of-numbers-in-python.
     '''
-    a = np.arange(2 ** n, dtype=int)[np.newaxis,:]
-    b = np.arange(n, dtype=int)[::-1,np.newaxis]
+    a = np.arange(2 ** m, dtype=int)[np.newaxis,:]
+    b = np.arange(m, dtype=int)[::-1,np.newaxis]
     return np.array(a & 2**b > 0, dtype=int)
+
+def base_ints(q, m):
+    '''
+    Returns a matrix where row 'i' is the base-q representation of i, for i from 0 to q ** m - 1.
+    Covers the functionality of binary_ints when n = 2, but binary_ints is faster for that case.
+    '''
+    get_row = lambda i: np.array([int(j) for j in np.base_repr(i, base=q).zfill(m)])
+    return np.vstack((get_row(i) for i in range(q ** m)))

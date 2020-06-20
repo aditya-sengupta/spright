@@ -13,9 +13,9 @@ from utils import fwht, dec_to_bin, bin_to_dec, binary_ints
 from query import compute_delayed_wht, get_Ms, get_b
 from reconstruct import singleton_detection
 
-class Decoder:
+class SPRIGHT:
     '''
-    Class to store decoder configurations and carry out decoding.
+    Class to store encoder/decoder configurations and carry out encoding/decoding.
 
     Attributes
     ----------
@@ -34,9 +34,9 @@ class Decoder:
         self.query_method = query_method
         self.reconstruct_method = reconstruct_method
 
-    def decode(self, signal, verbose=False):
+    def transform(self, signal, verbose=False):
         '''
-        Full SPRIGHT decoding. Implements Algorithm 2 from [2].
+        Full SPRIGHT encoding and decoding. Implements Algorithms 1 and 2 from [2].
         (numbers) in the comments indicate equation numbers in [2].
         
         Arguments
@@ -188,6 +188,6 @@ class Decoder:
 if __name__ == "__main__":
     from inputsignal import Signal
     test_signal = Signal(4, [4, 6, 10, 15], strengths=[2, 4, 1, 1], noise_sd=0.01)
-    decoder = Decoder(query_method="simple", reconstruct_method="mle")
-    residual = decoder.decode(test_signal) - test_signal.signal_w
-    print("Residual energy: {0}".format(np.inner(residual, residual),))
+    spright = SPRIGHT(query_method="simple", reconstruct_method="mle")
+    residual = spright.transform(test_signal) - test_signal.signal_w
+    print("Residual energy: {0}".format(np.inner(residual, residual)))
