@@ -45,3 +45,13 @@ def base_ints(q, m):
     '''
     get_row = lambda i: np.array([int(j) for j in np.base_repr(i, base=q).zfill(m)])
     return np.vstack((get_row(i) for i in range(q ** m)))
+
+def polymod(p1, p2, q):
+    '''
+    Computes p1 modulo p2, and takes the coefficients modulo q.
+    '''
+    p1 = np.trim_zeros(p1, trim='f')
+    while len(p1) >= len(p2) and len(p1) > 0:
+        p1 -= p1[0] // p2[0] * np.pad(p2, (0, len(p1) - len(p2)))
+        p1 = np.trim_zeros(p1, trim='f')
+    return np.trim_zeros(np.mod(p1, q), trim='f')

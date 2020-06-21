@@ -3,29 +3,18 @@ Computations over finite fields. Exists in external libraries, but none that are
 so easier just to rewrite.
 '''
 import numpy as np
-from sympy import totient
-
+from functools import reduce
+from utils import polymod
 
 # TODO: fill this in with a function rather than manually
 prime_polynomials = {
     8 : [[1, 0, 1, 1], [1, 1, 0, 1]],
     16: [[1, 0, 0, 1, 1]]
 }
-
-def polymod(p1, p2, q):
-    '''
-    Computes p1 modulo p2, and takes the coefficients modulo q.
-    '''
-    p1 = np.trim_zeros(p1, trim='f')
-    while len(p1) >= len(p2) and len(p1) > 0:
-        p1 -= p1[0] / p2[0] * np.pad(p2, (0, len(p1) - len(p2)))
-        p1 = np.trim_zeros(p1, trim='f')
-    return np.mod(p1, q)
     
-
 class GaloisElement(np.ndarray):
     '''
-    An element of GF(q^m), which we identify as the field of polynomials with coefficients in Z_q modulo 
+    An element of GF(q ** m), which we identify as the field of polynomials with coefficients in Z_q modulo 
     a prime polynomial, specifically prime_polynomials.get(q ** m)[poly_index].
     '''
     def __new__(cls, poly, q=2, m=1, poly_index=0, qpoly=None):
@@ -54,22 +43,38 @@ class GaloisElement(np.ndarray):
     def pairwise_operate(self, other, opname):
         assert self.equiv(other), "polynomials are from different fields"
         operation = {"add" : np.polyadd, "mul" : np.polymul}.get(opname)
-        return polymod(operation(self, other), self.qpoly, self.q)
+        return GaloisElement(operation(self, other), q=self.q, m=self.m, qpoly=self.qpoly)
         
     def __add__(self, other):
         if not isinstance(other, GaloisElement):
             return super().__add__(other)
         return self.pairwise_operate(other, "add")
 
+    def __radd__(self, other):
+        if isinstance(other, int) and other == 0: # edge case for sum
+            return self
+        return other.__add__(self)
+
     def __mul__(self, other):
         if not isinstance(other, GaloisElement):
             return super().__mul__(other)
         return self.pairwise_operate(other, "mul")
 
+    def __pow__(self, n):
+        if n == 0:
+            return GaloisElement([1], q=self.q, m=self.m, qpoly=self.qpoly)
+        return self * self ** (n - 1)
+
+    def compose(self, other):
+        '''
+        Composes self onto other, in the order self(other(x)).
+        Alternatively: substitutes other into self.
+        '''
+        print([coeff * other ** (len(self) - 1 - i) for i, coeff in enumerate(self)])
+        return np.mod(sum([coeff * other ** i for i, coeff in enumerate(self)]), self.q)
+
 if __name__ == "__main__":
+    from copy import deepcopy
     a = GaloisElement([1, 0, 1], q=2, m=4)
-    b = GaloisElement([1, 0, 0, 0, 1], q=2, m=4)
-    print(repr(a))
-    print(repr(b))
-    print(a + b)
-    print(a * b)
+    b = GaloisElement([1, 1], q=2, m=4)
+    print(a.compose(b))
