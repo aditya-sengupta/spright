@@ -1,6 +1,8 @@
 '''
 Computations over finite fields. Exists in external libraries, but none that are canonical and up-to-date,
 so easier just to rewrite.
+
+TODO: make q, m, qpoly context variables instead of passing them around at every call.
 '''
 import numpy as np
 from functools import reduce
@@ -70,11 +72,12 @@ class GaloisElement(np.ndarray):
         Composes self onto other, in the order self(other(x)).
         Alternatively: substitutes other into self.
         '''
-        print([coeff * other ** (len(self) - 1 - i) for i, coeff in enumerate(self)])
         return np.mod(sum([coeff * other ** i for i, coeff in enumerate(self)]), self.q)
 
+
 if __name__ == "__main__":
-    from copy import deepcopy
+    import sys
+    sys.setrecursionlimit(30)
     a = GaloisElement([1, 0, 1], q=2, m=4)
-    b = GaloisElement([1, 1], q=2, m=4)
-    print(a.compose(b))
+    b = GaloisElement([1, 0], q=2, m=4) ** 2
+    print(a + b)
