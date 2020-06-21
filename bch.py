@@ -50,6 +50,7 @@ def generator_polynomial(q = 2, m = 4, d = 3):
     return np.mod(np.array(lcm([make_minimal_polynomial(q = q, m = m, d = i) for i in range(1, d)]), dtype=int), q)
 
 if __name__ == "__main__":
-    for i in range(2, 15):
-        print(make_minimal_polynomial(d = i))
-        print(generator_polynomial(d = i))
+    q = 2
+    m = 4
+    for i in range(2, q ** m - 1):
+        print(generator_polynomial(q = q, m = m, d = i))
