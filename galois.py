@@ -38,9 +38,8 @@ class GaloisElement(np.ndarray):
         return all(self.qpoly == other.qpoly)
 
     def __repr__(self):
-        return ''.join([" + " * (i > 0) + str(p) + "x^" + str(len(self) - 1 - i) for i, p in enumerate(self)]) + " in GF({0}^{1})".format(self.q, self.m)
+        return ''.join([" + " * (i > 0 and p > 0) + (p > 0) * (str(p) + "x^" + str(len(self) - 1 - i)) for i, p in enumerate(self)]) + " in GF({0}^{1})".format(self.q, self.m)
 
-        
     def __add__(self, other):
         assert self.equiv(other), "polynomials are from different fields"
         return np.mod(super().__add__(other), self.q)
@@ -51,6 +50,8 @@ class GaloisElement(np.ndarray):
         return other.__add__(self)
 
     def __mul__(self, other):
+        if not isinstance(other, GaloisElement):
+            return GaloisElement(super().__mul__(other), q=self.q, m=self.m, qpoly=self.qpoly)
         assert self.equiv(other), "polynomials are from different fields"
         return polymod(np.convolve(self, other), self.qpoly, self.q, self.m)
 
@@ -71,4 +72,4 @@ if __name__ == "__main__":
     from copy import deepcopy
     a = GaloisElement([1, 0, 1], q=2, m=4)
     b = GaloisElement([1, 0, 1], q=2, m=4)
-    print(a * b)
+    print(a.compose(b))
