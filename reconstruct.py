@@ -6,7 +6,7 @@ Methods for the reconstruction engine; specifically, to
 '''
 
 import numpy as np
-from utils import dec_to_bin
+from utils import bin_to_dec, dec_to_bin, binary_ints
 from query import compute_delayed_wht
 
 def singleton_detection_noiseless(U_slice, **kwargs):
@@ -91,6 +91,7 @@ def bin_cardinality(signal, M, num_delays=None):
     A list (in decimal form for compactness) of the k values of the singletons. 
     Length matches the number of 1s in cardinality.
     '''
+    b = M.shape[1]
     if num_delays is None:
         num_delays = signal.n + 1
     U, D = compute_delayed_wht(signal, M, num_delays)
@@ -111,7 +112,7 @@ def bin_cardinality(signal, M, num_delays=None):
                 k = singleton_detection_noiseless(col)
             else:
                 selection = np.where([bin_to_dec(row) == i for row in (M.T.dot(K)).T])[0]
-                k, sgn = singleton_detection(col, selection, S[:, selection], signal.n)
+                k, sgn = singleton_detection(col, method="mle", selection=selection, S_slice=S[:, selection], n=signal.n)
             rho = np.mean(np.abs(col))
             residual = col - sgn * rho * (-1) ** np.dot(D, k)
             print("Residual: ", residual)

@@ -27,7 +27,7 @@ class SPRIGHT:
     reconstruct_method : str
     The method to detect singletons.
     Currently implemented methods:
-        "noiseless" : decode according to [2], section 4.2, with the assumption the signal is noiseleess
+        "noiseless" : decode according to [2], section 4.2, with the assumption the signal is noiseless
         "mle" : naive noisy decoding; decode by taking the maximum-likelihood singleton that could be at that bin.
     '''
     def __init__(self, query_method, reconstruct_method):

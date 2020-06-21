@@ -53,4 +53,4 @@ if __name__ == "__main__":
     q = 2
     m = 4
     for i in range(2, q ** m - 1):
-        print(generator_polynomial(q = q, m = m, d = i))
+        print("d = {0} has the polynomial {1}".format(i, generator_polynomial(q = q, m = m, d = i)))

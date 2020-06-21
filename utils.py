@@ -62,4 +62,3 @@ def rref(A, b, q):
     Row reduction, to easily solve finite field systems.
     '''
     raise NotImplementedError()
-
