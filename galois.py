@@ -8,8 +8,9 @@ from utils import polymod
 
 # TODO: fill this in with a function rather than manually
 prime_polynomials = {
-    8 : [[1, 0, 1, 1], [1, 1, 0, 1]],
-    16: [[1, 0, 0, 1, 1]]
+    8  : [[1, 0, 1, 1], [1, 1, 0, 1]],
+    16 : [[1, 0, 0, 1, 1]],
+    32 : [[1, 0, 0, 1, 0, 1]]
 }
     
 class GaloisElement(np.ndarray):
@@ -61,6 +62,8 @@ class GaloisElement(np.ndarray):
         return self.pairwise_operate(other, "mul")
 
     def __pow__(self, n):
+        if n < 0 or int(n) != n:
+            raise ArithmeticError("Power must be a non-negative integer.")
         if n == 0:
             return GaloisElement([1], q=self.q, m=self.m, qpoly=self.qpoly)
         return self * self ** (n - 1)
