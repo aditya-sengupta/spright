@@ -19,8 +19,7 @@ class GaloisElement(np.ndarray):
     a prime polynomial, specifically prime_polynomials.get(q ** m)[poly_index].
     '''
     def __new__(cls, poly, q=2, m=1, poly_index=0, qpoly=None):
-        if qpoly is None:
-            qpoly = np.array(prime_polynomials.get(q ** m)[poly_index])
+        qpoly = np.array(prime_polynomials.get(q ** m)[poly_index])
         polynomial = np.asarray(polymod(poly, qpoly, q, m), dtype=int).view(cls)
         polynomial.q = q
         polynomial.m = m
@@ -42,7 +41,7 @@ class GaloisElement(np.ndarray):
         return ''.join([" + " * (i > 0) + str(p) + "x^" + str(len(self) - 1 - i) for i, p in enumerate(self)]) + " in GF({0}^{1})".format(self.q, self.m)
 
     def pairwise_operate(self, other, opname):
-        assert self.equiv(other), "polynomials are from different fields"
+        # assert self.equiv(other), "polynomials are from different fields"
         operation = {"add" : np.add, "mul" : np.convolve}.get(opname)
         return GaloisElement(operation(self, other), q=self.q, m=self.m, qpoly=self.qpoly)
         

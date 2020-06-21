@@ -8,7 +8,8 @@ Methods for the query generator: specifically, to
 
 import numpy as np
 
-from utils import fwht, bin_to_dec, dec_to_bin, binary_ints
+from utils import fwht, bin_to_dec, dec_to_bin, binary_ints, polyeval
+from bch import generator_polynomial
 
 def get_b_simple(signal):
     return signal.n // 2
@@ -31,7 +32,8 @@ def get_b(signal, method="simple"):
     The sparsity coefficient.
     '''
     return {
-        "simple" : get_b_simple
+        "simple" : get_b_simple,
+        "bch" : get_b_simple
     }.get(method)(signal)
 
 def get_Ms_simple(n, b, num_to_get=None):
@@ -48,13 +50,19 @@ def get_Ms_simple(n, b, num_to_get=None):
 
     return Ms
 
-def get_Ms_BCH(n, b, num_to_get=None):
+def get_Ms_bch(n, b, num_to_get=None):
     if n % b != 0:
         raise NotImplementedError("b must be exactly divisible by n")
     if num_to_get is None:
         num_to_get = n // b
 
-    
+    Ms = []
+    for i in range(num_to_get):
+        poly = generator_polynomial(q=2, m=int(np.log2(n)), d=b//2, idx=i)
+        M = np.vstack((dec_to_bin(polyeval(poly, 2 ** i) % (2 ** n), n) for i in range(b)))
+        Ms.append(M)
+
+    return Ms
 
 def get_Ms(n, b, num_to_get=None, method="simple"):
     '''
@@ -80,7 +88,8 @@ def get_Ms(n, b, num_to_get=None, method="simple"):
     The list of subsampling matrices.
     '''
     return {
-        "simple" : get_Ms_simple
+        "simple" : get_Ms_simple,
+        "bch" : get_Ms_bch
     }.get(method)(n, b, num_to_get)
 
 def subsample_indices(M, d):

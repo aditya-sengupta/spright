@@ -57,7 +57,6 @@ class SPRIGHT:
         wht = np.zeros_like(signal.signal_t)
         b = get_b(signal, method=self.query_method)
         Ms = get_Ms(signal.n, b, method=self.query_method)
-        c = len(Ms)
         Us, Ss = [], []
         singletons = {}
         multitons = []
@@ -187,7 +186,7 @@ class SPRIGHT:
 
 if __name__ == "__main__":
     from inputsignal import Signal
-    test_signal = Signal(4, [4, 6, 10, 15], strengths=[2, 4, 1, 1], noise_sd=0.01)
-    spright = SPRIGHT(query_method="simple", reconstruct_method="mle")
+    test_signal = Signal(8, [4, 6, 10, 15], strengths=[2, 4, 1, 1], noise_sd=0.01)
+    spright = SPRIGHT(query_method="bch", reconstruct_method="mle")
     residual = spright.transform(test_signal) - test_signal.signal_w
     print("Residual energy: {0}".format(np.inner(residual, residual)))

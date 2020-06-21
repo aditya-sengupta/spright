@@ -10,7 +10,7 @@ import copy
 
 from galois import GaloisElement
 
-def make_minimal_polynomial(q = 2, m = 4, d = 1):
+def make_minimal_polynomial(q = 2, m = 4, d = 1, idx = 0):
     '''
     Returns a minimal polynomial in MATLAB order (biggest exponent first) for the element alpha in GF(q ** m).
     Currently only supports q = 2.
@@ -19,7 +19,6 @@ def make_minimal_polynomial(q = 2, m = 4, d = 1):
     if q == 2 and m == 4 and d in [5, 10]:
        return (1, 1, 1) # hardcoding just to test tougher parts, TODO: come back and fix
     # https://math.stackexchange.com/questions/2232179/how-to-find-minimal-polynomial-for-an-element-in-mboxgf2m/2869636
-    idx = 0
     alpha = GaloisElement(np.array([1, 0]), q=q, m=m, poly_index=idx) ** d
     A = np.vstack([alpha ** i for i in range(m + 1)]).T
     if q != 2:
@@ -46,8 +45,8 @@ def lcm(polynomials):
     '''
     return reduce(np.convolve, set(polynomials))
 
-def generator_polynomial(q = 2, m = 4, d = 3):
-    return np.mod(np.array(lcm([make_minimal_polynomial(q = q, m = m, d = i) for i in range(1, d)]), dtype=int), q)
+def generator_polynomial(q = 2, m = 4, d = 3, idx = 0):
+    return np.mod(np.array(lcm([make_minimal_polynomial(q = q, m = m, d = i, idx=idx) for i in range(1, d)]), dtype=int), q)
 
 if __name__ == "__main__":
     q = 2

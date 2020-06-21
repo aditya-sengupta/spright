@@ -62,3 +62,6 @@ def rref(A, b, q):
     Row reduction, to easily solve finite field systems.
     '''
     raise NotImplementedError()
+
+def polyeval(poly, x):
+    return sum([coeff * x ** (len(poly) - 1 - i) for i, coeff in enumerate(poly)])
