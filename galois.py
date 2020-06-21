@@ -1,8 +1,6 @@
 '''
 Computations over finite fields. Exists in external libraries, but none that are canonical and up-to-date,
 so easier just to rewrite.
-
-TODO: make q, m, qpoly context variables instead of passing them around at every call.
 '''
 import numpy as np
 from functools import reduce
@@ -22,7 +20,7 @@ class GaloisElement(np.ndarray):
     def __new__(cls, poly, q=2, m=1, poly_index=0, qpoly=None):
         if qpoly is None:
             qpoly = np.array(prime_polynomials.get(q ** m)[poly_index])
-        polynomial = np.asarray(polymod(poly, qpoly, q), dtype=int).view(cls)
+        polynomial = np.asarray(polymod(poly, qpoly, q, m), dtype=int).view(cls)
         polynomial.q = q
         polynomial.m = m
         polynomial.qpoly = qpoly
@@ -42,15 +40,10 @@ class GaloisElement(np.ndarray):
     def __repr__(self):
         return ''.join([" + " * (i > 0) + str(p) + "x^" + str(len(self) - 1 - i) for i, p in enumerate(self)]) + " in GF({0}^{1})".format(self.q, self.m)
 
-    def pairwise_operate(self, other, opname):
-        assert self.equiv(other), "polynomials are from different fields"
-        operation = {"add" : np.polyadd, "mul" : np.polymul}.get(opname)
-        return GaloisElement(operation(self, other), q=self.q, m=self.m, qpoly=self.qpoly)
         
     def __add__(self, other):
-        if not isinstance(other, GaloisElement):
-            return super().__add__(other)
-        return self.pairwise_operate(other, "add")
+        assert self.equiv(other), "polynomials are from different fields"
+        return np.mod(super().__add__(other), self.q)
 
     def __radd__(self, other):
         if isinstance(other, int) and other == 0: # edge case for sum
@@ -58,9 +51,8 @@ class GaloisElement(np.ndarray):
         return other.__add__(self)
 
     def __mul__(self, other):
-        if not isinstance(other, GaloisElement):
-            return super().__mul__(other)
-        return self.pairwise_operate(other, "mul")
+        assert self.equiv(other), "polynomials are from different fields"
+        return polymod(np.convolve(self, other), self.qpoly, self.q, self.m)
 
     def __pow__(self, n):
         if n == 0:
@@ -72,12 +64,11 @@ class GaloisElement(np.ndarray):
         Composes self onto other, in the order self(other(x)).
         Alternatively: substitutes other into self.
         '''
+        print([coeff * other ** (len(self) - 1 - i) for i, coeff in enumerate(self)])
         return np.mod(sum([coeff * other ** i for i, coeff in enumerate(self)]), self.q)
 
-
 if __name__ == "__main__":
-    import sys
-    sys.setrecursionlimit(30)
+    from copy import deepcopy
     a = GaloisElement([1, 0, 1], q=2, m=4)
-    b = GaloisElement([1, 0], q=2, m=4) ** 2
-    print(a + b)
+    b = GaloisElement([1, 0, 1], q=2, m=4)
+    print(a * b)
