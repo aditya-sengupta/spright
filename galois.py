@@ -38,11 +38,17 @@ class GaloisElement(np.ndarray):
         return all(self.qpoly == other.qpoly)
 
     def __repr__(self):
-        return ''.join([" + " * (i > 0 and p > 0) + (p > 0) * (str(p) + "x^" + str(len(self) - 1 - i)) for i, p in enumerate(self)]) + " in GF({0}^{1})".format(self.q, self.m)
+        return ''.join([" + " * (i > 0) + str(p) + "x^" + str(len(self) - 1 - i) for i, p in enumerate(self)]) + " in GF({0}^{1})".format(self.q, self.m)
 
-    def __add__(self, other):
+    def pairwise_operate(self, other, opname):
         assert self.equiv(other), "polynomials are from different fields"
-        return np.mod(super().__add__(other), self.q)
+        operation = {"add" : np.add, "mul" : np.convolve}.get(opname)
+        return GaloisElement(operation(self, other), q=self.q, m=self.m, qpoly=self.qpoly)
+        
+    def __add__(self, other):
+        if not isinstance(other, GaloisElement):
+            return super().__add__(other)
+        return self.pairwise_operate(other, "add")
 
     def __radd__(self, other):
         if isinstance(other, int) and other == 0: # edge case for sum
@@ -51,9 +57,8 @@ class GaloisElement(np.ndarray):
 
     def __mul__(self, other):
         if not isinstance(other, GaloisElement):
-            return GaloisElement(super().__mul__(other), q=self.q, m=self.m, qpoly=self.qpoly)
-        assert self.equiv(other), "polynomials are from different fields"
-        return polymod(np.convolve(self, other), self.qpoly, self.q, self.m)
+            return super().__mul__(other)
+        return self.pairwise_operate(other, "mul")
 
     def __pow__(self, n):
         if n == 0:
@@ -65,11 +70,10 @@ class GaloisElement(np.ndarray):
         Composes self onto other, in the order self(other(x)).
         Alternatively: substitutes other into self.
         '''
-        print([coeff * other ** (len(self) - 1 - i) for i, coeff in enumerate(self)])
-        return np.mod(sum([coeff * other ** i for i, coeff in enumerate(self)]), self.q)
+        return np.mod(sum([coeff * other ** (len(self) - 1 - i) for i, coeff in enumerate(self)]), self.q)
 
 if __name__ == "__main__":
     from copy import deepcopy
     a = GaloisElement([1, 0, 1], q=2, m=4)
-    b = GaloisElement([1, 0, 1], q=2, m=4)
+    b = GaloisElement([1, 1], q=2, m=4)
     print(a.compose(b))
