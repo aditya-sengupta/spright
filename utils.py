@@ -56,3 +56,10 @@ def polymod(p1, p2, q, m):
         p1 -= p1[0] // p2[0] * np.pad(p2, (0, len(p1) - len(p2)))
         p1 = np.trim_zeros(p1, trim='f')
     return np.pad(np.mod(p1, q), (m + 1 - len(p1), 0))
+
+def rref(A, b, q):
+    '''
+    Row reduction, to easily solve finite field systems.
+    '''
+    raise NotImplementedError()
+
