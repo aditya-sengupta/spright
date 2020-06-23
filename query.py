@@ -59,8 +59,9 @@ def get_Ms_bch(n, b, num_to_get=None):
     Ms = []
     for i in range(num_to_get):
         poly = generator_polynomial(q=2, m=int(np.log2(n)), d=b//2, idx=i)
-        M = np.vstack((dec_to_bin(polyeval(poly, 2 ** i) % (2 ** n), n) for i in range(b)))
+        M = np.vstack([dec_to_bin(polyeval(poly, 2 ** i) % (2 ** n), n) for i in range(b)])
         Ms.append(M.T)
+        print(M)
 
     return Ms
 
