@@ -82,6 +82,10 @@ class SPRIGHT:
         # subsample, make the observation [U] and offset signature [S] matrices
         for M in Ms:
             D = get_D(signal.n, method=self.delays_method, num_delays=num_delays)
+            if verbose:
+                print("------")
+                print("a delay matrix")
+                print(D)
             U, used_i = compute_delayed_wht(signal, M, D)
             Us.append(U)
             Ss.append((-1) ** (D @ K)) # offset signature matrix
@@ -145,7 +149,7 @@ class SPRIGHT:
                             if verbose:
                                 print('amplitude: {}'.format(rho))
                             
-            
+        
             # all singletons and multitons are discovered
             if verbose:
                 print('singletons:')
@@ -154,6 +158,7 @@ class SPRIGHT:
 
                 print("Multitons : {0}\n".format(multitons))
             
+            # raise RuntimeError("stop")
             # WARNING: this is not a correct thing to do
             # in the last iteration of peeling, everything will be singletons and there
             # will be no multitons
@@ -240,7 +245,7 @@ if __name__ == "__main__":
             delays_method="random",
             reconstruct_method="mle"
         )
-        residual = spright.transform(test_signal, report=False) - test_signal.signal_w
+        residual = spright.transform(test_signal, verbose=True, report=False) - test_signal.signal_w
         print("Residual energy: {0}".format(np.inner(residual, residual)))
     else:
         configs = [
