@@ -196,13 +196,12 @@ class SPRIGHT:
         return wht
 
 if __name__ == "__main__":
-    np.random.seed(1)
     from inputsignal import Signal
-    test_signal = Signal(4, [4, 6, 10, 15], strengths=[2, 4, 1, 1], noise_sd=0)
+    test_signal = Signal(4, [4, 6, 10, 15], strengths=[2, 4, 1, 1], noise_sd=0.01)
     spright = SPRIGHT(
         query_method="simple",
         delays_method="nso",
         reconstruct_method="nso",
     )
-    residual = spright.transform(test_signal, verbose=True) - test_signal.signal_w
+    residual = spright.transform(test_signal) - test_signal.signal_w
     print("Residual energy: {0}".format(np.inner(residual, residual)))
