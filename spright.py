@@ -230,15 +230,15 @@ class SPRIGHT:
         print("Average sample ratio: {}".format(s))
 
 if __name__ == "__main__":
-    np.random.seed(3)
+    np.random.seed(11)
     from inputsignal import Signal
     test_signal = Signal(4, [4, 6, 10, 15], strengths=[2, 4, 1, 1], noise_sd=0.01)
-    test_one_method = False
+    test_one_method = True
     if test_one_method:
         spright = SPRIGHT(
             query_method="simple",
-            delays_method="nso",
-            reconstruct_method="nso"
+            delays_method="random",
+            reconstruct_method="mle"
         )
         residual = spright.transform(test_signal, report=False) - test_signal.signal_w
         print("Residual energy: {0}".format(np.inner(residual, residual)))
