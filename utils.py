@@ -62,3 +62,15 @@ def rref(A, b, q):
     Row reduction, to easily solve finite field systems.
     '''
     raise NotImplementedError()
+
+def sign(x):
+    '''
+    Replacement for np.sign that matches the convention (footnote 2 on page 11).
+    '''
+    return (1 - np.sign(x)) // 2
+
+def flip(x):
+    '''
+    Flip all bits in the binary array x.
+    '''
+    return np.bitwise_xor(x, 1)

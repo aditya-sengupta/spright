@@ -136,7 +136,8 @@ def get_D(n, method="random", **kwargs):
     '''
     return {
         "identity_like" : get_D_identity_like,
-        "random" : get_D_random
+        "random" : get_D_random,
+        "nso" : get_D_nso
     }.get(method)(n, **kwargs)
 
 def subsample_indices(M, d):

@@ -6,7 +6,7 @@ Methods for the reconstruction engine; specifically, to
 '''
 
 import numpy as np
-from utils import bin_to_dec, dec_to_bin, binary_ints
+from utils import bin_to_dec, dec_to_bin, binary_ints, sign, flip
 from query import compute_delayed_wht
 
 def singleton_detection_noiseless(U_slice, **kwargs):
@@ -62,10 +62,13 @@ def singleton_detection_mle(U_slice, **kwargs):
 
 def singleton_detection_nso(U_slice, **kwargs):
     n = kwargs.get("n")
-    chunks = np.sign(np.reshape(U_slice, (len(U_slice) // n + 1, n + 1))) # to check
-    objs = (chunks + chunks[:,0])[:,1:]
-    choices = np.hstack((np.sum(objs, axis=0) % 2, np.sum(objs + 1, axis=0) % 2))
-    return np.argmin(choices), 1
+    chunks = sign(np.reshape(U_slice, (len(U_slice) // (n + 1), n + 1)))
+    chunks = (np.mod((chunks.T + chunks[:,0]).T, 2)).astype(dtype=int)[:,1:]
+    choices = np.vstack((np.sum(chunks, axis=0), np.sum([flip(c) for c in chunks], axis=0)))
+    nso_k = np.argmin(choices, axis=0)
+    mle_k, mle_sign = singleton_detection_mle(U_slice, **kwargs)
+    # assert np.allclose(mle_k, nso_k)
+    return nso_k, mle_sign
 
 def singleton_detection(U_slice, method="mle", **kwargs):
     return {
