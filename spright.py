@@ -10,7 +10,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 from utils import fwht, dec_to_bin, bin_to_dec, binary_ints
-from query import compute_delayed_wht, get_Ms, get_b
+from query import compute_delayed_wht, get_Ms, get_b, get_D
 from reconstruct import singleton_detection
 
 class SPRIGHT:
@@ -24,14 +24,21 @@ class SPRIGHT:
     Currently implemented methods: 
         "simple" : choose some predetermined matrices based on problem size.
 
+    delays_method : str
+    The method to generate the matrix of delays.
+    Currently implemented methods:
+        "identity_like" : return a zero row and the identity matrix vertically stacked together.
+        "random" : make a random set of delays.
+
     reconstruct_method : str
     The method to detect singletons.
     Currently implemented methods:
-        "noiseless" : decode according to [2], section 4.2, with the assumption the signal is noiseless
+        "noiseless" : decode according to [2], section 4.2, with the assumption the signal is noiseless.
         "mle" : naive noisy decoding; decode by taking the maximum-likelihood singleton that could be at that bin.
     '''
-    def __init__(self, query_method, reconstruct_method):
+    def __init__(self, query_method, delays_method, reconstruct_method):
         self.query_method = query_method
+        self.delays_method = delays_method
         self.reconstruct_method = reconstruct_method
 
     def transform(self, signal, verbose=False):
@@ -57,16 +64,19 @@ class SPRIGHT:
         wht = np.zeros_like(signal.signal_t)
         b = get_b(signal, method=self.query_method)
         Ms = get_Ms(signal.n, b, method=self.query_method)
-        c = len(Ms)
         Us, Ss = [], []
         singletons = {}
         multitons = []
-        num_delays = signal.n + 1
+        if self.delays_method is not "nso":
+            num_delays = signal.n + 1
+        else:
+            num_delays = signal.n * int(np.log2(signal.n)) # idk
         K = binary_ints(signal.n)
             
-        # subsample, make the observation [U] and delays [D] matrices
+        # subsample, make the observation [U] and offset signature [S] matrices
         for M in Ms:
-            U, D = compute_delayed_wht(signal, M, num_delays, force_identity_like=(self.reconstruct_method == "noiseless"))
+            D = get_D(signal.n, method=self.delays_method, num_delays=num_delays)
+            U = compute_delayed_wht(signal, M, D)
             Us.append(U)
             Ss.append((-1) ** (D @ K)) # offset signature matrix
         
@@ -188,6 +198,10 @@ class SPRIGHT:
 if __name__ == "__main__":
     from inputsignal import Signal
     test_signal = Signal(4, [4, 6, 10, 15], strengths=[2, 4, 1, 1], noise_sd=0.01)
-    spright = SPRIGHT(query_method="simple", reconstruct_method="mle")
+    spright = SPRIGHT(
+        query_method="simple",
+        reconstruct_method="mle",
+        delays_method="random" if test_signal.noise_sd > 0 else "identity_like"
+    )
     residual = spright.transform(test_signal) - test_signal.signal_w
     print("Residual energy: {0}".format(np.inner(residual, residual)))

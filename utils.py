@@ -48,7 +48,7 @@ def base_ints(q, m):
 
 def polymod(p1, p2, q, m):
     '''
-    Computes p1 modulo (in the sense of the remainder of division) p2, and takes the coefficients modulo q.
+    Computes p1 modulo p2, and takes the coefficients modulo q.
     '''
     p1 = np.trim_zeros(p1, trim='f')
     p2 = np.trim_zeros(p2, trim='f')

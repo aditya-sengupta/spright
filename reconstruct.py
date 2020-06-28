@@ -29,7 +29,7 @@ def singleton_detection_noiseless(U_slice, **kwargs):
 def singleton_detection_mle(U_slice, **kwargs):
     '''
     Finds the true index of a singleton, or the best-approximation singleton of a multiton, in the presence of noise.
-    Uses MLE: looks at the residuals created by peeling off each 
+    Uses MLE: looks at the residuals created by peeling off each possible singleton.
     
     Arguments
     ---------
@@ -60,13 +60,21 @@ def singleton_detection_mle(U_slice, **kwargs):
     k_sel = np.argmin(residuals)
     return dec_to_bin(selection[k_sel], n), np.sign(alphas[k_sel])
 
+def singleton_detection_nso(U_slice, **kwargs):
+    n = kwargs.get("n")
+    chunks = np.sign(np.reshape(U_slice, (len(U_slice) // n + 1, n + 1))) # to check
+    objs = (chunks + chunks[:,0])[:,1:]
+    choices = np.hstack((np.sum(objs, axis=0) % 2, np.sum(objs + 1, axis=0) % 2))
+    return np.argmin(choices), 1
+
 def singleton_detection(U_slice, method="mle", **kwargs):
     return {
         "mle" : singleton_detection_mle,
-        "noiseless" : singleton_detection_noiseless
+        "noiseless" : singleton_detection_noiseless,
+        "nso" : singleton_detection_nso
     }.get(method)(U_slice, **kwargs)
 
-def bin_cardinality(signal, M, num_delays=None):
+def bin_cardinality(signal, M, D):
     '''
     Computes delayed WHT observations and declares cardinality based on that.
     2 is a stand-in for any cardinality > 1. For debugging purposes.
@@ -79,8 +87,8 @@ def bin_cardinality(signal, M, num_delays=None):
     M : numpy.ndarray, shape (n, b)
     The subsampling matrix; takes on binary values.
     
-    num_delays : int
-    The number of delays to apply; or, the number of rows in the delays matrix.
+    D : numpy.ndarray of ints, shape (num_delays, n).
+    The delays matrix.
 
     Returns
     -------
@@ -92,12 +100,10 @@ def bin_cardinality(signal, M, num_delays=None):
     Length matches the number of 1s in cardinality.
     '''
     b = M.shape[1]
-    if num_delays is None:
-        num_delays = signal.n + 1
-    U, D = compute_delayed_wht(signal, M, num_delays)
+    U = compute_delayed_wht(signal, M, D)
     cardinality = np.ones((signal.n,), dtype=np.int) # vector of indicators
     singleton_indices = []
-    cutoff = 2 * signal.noise_sd ** 2 * (2 ** (signal.n - b)) * num_delays
+    cutoff = 2 * signal.noise_sd ** 2 * (2 ** (signal.n - b)) * D.shape[0]
     if signal.noise_sd > 0:
         K = binary_ints(signal.n)
         S = (-1) ** (D @ K)

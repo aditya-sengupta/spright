@@ -11,6 +11,9 @@ import numpy as np
 from utils import fwht, bin_to_dec, dec_to_bin, binary_ints
 
 def get_b_simple(signal):
+    '''
+    A semi-arbitrary fixed choice of the sparsity coefficient. See get_b for full signature.
+    '''
     return signal.n // 2
 
 def get_b(signal, method="simple"):
@@ -35,6 +38,9 @@ def get_b(signal, method="simple"):
     }.get(method)(signal)
 
 def get_Ms_simple(n, b, num_to_get=None):
+    '''
+    A semi-arbitrary fixed choice of the subsampling matrices. See get_Ms for full signature.
+    '''
     if n % b != 0:
         raise NotImplementedError("b must be exactly divisible by n")
     if num_to_get is None:
@@ -49,12 +55,14 @@ def get_Ms_simple(n, b, num_to_get=None):
     return Ms
 
 def get_Ms_BCH(n, b, num_to_get=None):
+    '''
+    The subsampling matrices that enable BCH coding. See get_Ms for full signature.
+    '''
     if n % b != 0:
         raise NotImplementedError("b must be exactly divisible by n")
     if num_to_get is None:
         num_to_get = n // b
-
-    
+    return
 
 def get_Ms(n, b, num_to_get=None, method="simple"):
     '''
@@ -83,6 +91,54 @@ def get_Ms(n, b, num_to_get=None, method="simple"):
         "simple" : get_Ms_simple
     }.get(method)(n, b, num_to_get)
 
+def get_D_identity_like(n, **kwargs):
+    '''
+    Gets the delays matrix [0; I], of dimension (n+1, n). See get_D for full signature.
+    # TODO: rename this to avoid conceptual name collision with zeros_like or empty_like
+    '''
+    return np.vstack((np.zeros(n,), np.eye(n)))
+
+def get_D_random(n, **kwargs):
+    '''
+    Gets a random delays matrix of dimension (num_delays, n). See get_D for full signature.
+    '''
+    num_delays = kwargs.get("num_delays")
+    choices = np.random.choice(2 ** n, num_delays, replace=False)
+    return np.array([dec_to_bin(x, n) for x in choices])
+
+def get_D_nso(n, **kwargs):
+    '''
+    Get a repetition code based (NSO-SPRIGHT) delays matrix. See get_D for full signature.
+    '''
+    num_delays = kwargs.get("num_delays")
+    p1 = num_delays // n # is this what we want?
+    random_offsets = get_D_random(n, num_delays=p1) # OR np.random.binomial(1, 0.5, (num_delays, p1))
+    D = np.empty((0, n))
+    identity_like = get_D_identity_like(n)
+    for row in random_offsets:
+        modulated_offsets = (row + identity_like) % 2
+        D = np.vstack((D, modulated_offsets))
+    return D
+    
+def get_D(n, method="random", **kwargs):
+    '''
+    Delay generator: gets a delays matrix.
+
+    Arguments
+    ---------
+    n : int
+    number of bits: log2 of the signal length.
+
+    Returns
+    -------
+    D : numpy.ndarray of binary ints, dimension (num_delays, n).
+    The delays matrix; if num_delays is not specified in kwargs, see the relevant sub-function for a default.
+    '''
+    return {
+        "identity_like" : get_D_identity_like,
+        "random" : get_D_random
+    }.get(method)(n, **kwargs)
+
 def subsample_indices(M, d):
     '''
     Query generator: creates indices for signal subsamples.
@@ -104,7 +160,7 @@ def subsample_indices(M, d):
     inds_binary = np.mod(np.dot(M, L).T + d, 2).T 
     return bin_to_dec(inds_binary)
 
-def compute_delayed_wht(signal, M, num_delays, force_identity_like=False):
+def compute_delayed_wht(signal, M, D):
     '''
     Creates random delays, subsamples according to M and the random delays,
     and returns the subsample WHT along with the delays.
@@ -123,16 +179,6 @@ def compute_delayed_wht(signal, M, num_delays, force_identity_like=False):
     force_identity_like : boolean
     Whether to make D = [0; I] like in the noiseless case; for debugging.
     '''
-    if num_delays is None:
-        num_delays = signal.n + 1
-    if signal.noise_sd > 0:
-        if not force_identity_like:
-            choices = np.random.choice(2 ** signal.n, num_delays, replace=False)
-        else:
-            choices = np.array([0] + [2 ** i for i in range(signal.n)])
-        D = np.array([dec_to_bin(x, signal.n) for x in choices])
-    else:
-        D = np.vstack((np.zeros(signal.n,), np.eye(signal.n)))
     samples_to_transform = signal.signal_t[np.array([subsample_indices(M, d) for d in D])] # subsample to allow small WHTs
-    U = np.array([fwht(row) for row in samples_to_transform]) # compute the small WHTs
-    return U, D
+    return np.array([fwht(row) for row in samples_to_transform]) # compute the small WHTs
+    
