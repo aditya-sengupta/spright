@@ -66,7 +66,7 @@ def singleton_detection_nso(U_slice, **kwargs):
     chunks = (np.mod((chunks.T + chunks[:,0]).T, 2)).astype(dtype=int)[:,1:]
     choices = np.vstack((np.sum(chunks, axis=0), np.sum([flip(c) for c in chunks], axis=0)))
     nso_k = np.argmin(choices, axis=0)
-    return nso_k, 1 # not sure why sign = 1
+    return nso_k, 1
 
 def singleton_detection(U_slice, method="mle", **kwargs):
     return {

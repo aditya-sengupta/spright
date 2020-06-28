@@ -1,13 +1,17 @@
 '''
 SPRIGHT decoding main file. Logic flow:
 
-1. Generate a signal from signal.py
-2. Subsample from query.py
-3. Peel using reconstruct.py
+1. Generate a signal from src/inputsignal.py
+2. Subsample from src/query.py
+3. Peel using src/reconstruct.py
 '''
+from setuptools import find_packages
+PACKAGES = find_packages(where="src")
 
 import numpy as np
 from matplotlib import pyplot as plt
+import sys
+sys.path.append("src")
 
 from utils import fwht, dec_to_bin, bin_to_dec, binary_ints
 from query import compute_delayed_wht, get_Ms, get_b, get_D
