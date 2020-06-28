@@ -5,8 +5,6 @@ SPRIGHT decoding main file. Logic flow:
 2. Subsample from src/query.py
 3. Peel using src/reconstruct.py
 '''
-from setuptools import find_packages
-PACKAGES = find_packages(where="src")
 
 import numpy as np
 from matplotlib import pyplot as plt
