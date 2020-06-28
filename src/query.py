@@ -180,6 +180,8 @@ def compute_delayed_wht(signal, M, D):
     force_identity_like : boolean
     Whether to make D = [0; I] like in the noiseless case; for debugging.
     '''
+    inds = np.array([subsample_indices(M, d) for d in D])
+    used_inds = set(np.unique(inds))
     samples_to_transform = signal.signal_t[np.array([subsample_indices(M, d) for d in D])] # subsample to allow small WHTs
-    return np.array([fwht(row) for row in samples_to_transform]) # compute the small WHTs
+    return np.array([fwht(row) for row in samples_to_transform]), used_inds # compute the small WHTs
     

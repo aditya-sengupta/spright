@@ -9,6 +9,8 @@ SPRIGHT decoding main file. Logic flow:
 import numpy as np
 from matplotlib import pyplot as plt
 import sys
+import tqdm
+import time
 sys.path.append("src")
 
 from utils import fwht, dec_to_bin, bin_to_dec, binary_ints
@@ -43,7 +45,7 @@ class SPRIGHT:
         self.delays_method = delays_method
         self.reconstruct_method = reconstruct_method
 
-    def transform(self, signal, verbose=False):
+    def transform(self, signal, verbose=False, report=False):
         '''
         Full SPRIGHT encoding and decoding. Implements Algorithms 1 and 2 from [2].
         (numbers) in the comments indicate equation numbers in [2].
@@ -69,6 +71,8 @@ class SPRIGHT:
         Us, Ss = [], []
         singletons = {}
         multitons = []
+        if report:
+            used = set()
         if self.delays_method is not "nso":
             num_delays = signal.n + 1
         else:
@@ -78,9 +82,11 @@ class SPRIGHT:
         # subsample, make the observation [U] and offset signature [S] matrices
         for M in Ms:
             D = get_D(signal.n, method=self.delays_method, num_delays=num_delays)
-            U = compute_delayed_wht(signal, M, D)
+            U, used_i = compute_delayed_wht(signal, M, D)
             Us.append(U)
             Ss.append((-1) ** (D @ K)) # offset signature matrix
+            if report:
+                used = used.union(used_i)
         
         cutoff = 2 * signal.noise_sd ** 2 * (2 ** (signal.n - b)) * num_delays # noise threshold
         if verbose:
@@ -195,15 +201,53 @@ class SPRIGHT:
                 # so averaging them reduces the effect of noise.
         
         wht /= 2 ** (signal.n - b)
-        return wht
+        if not report:
+            return wht
+        else:
+            return wht, len(used)
+
+    def method_test(self, signal, num_runs=10):
+        '''
+        Tests a method on a signal and reports its average execution time and sample efficiency.
+        '''
+        time_start = time.time()
+        samples = 0
+        for _ in tqdm.trange(num_runs):
+            wht, num_samples = self.transform(signal, report=True)
+            samples += num_samples
+        return (time.time() - time_start) / num_runs, samples / (num_runs * 2 ** signal.n)
+
+    def method_report(self, signal, num_runs=10):
+        '''
+        Reports the results of a method_test.
+        '''
+        print(
+            "Testing SPRIGHT with query method {0}, delays method {1}, reconstruct method {2}."
+            .format(self.query_method, self.delays_method, self.reconstruct_method)
+        )
+        t, s = self.method_test(signal, num_runs)
+        print("Average time in seconds: {}".format(t))
+        print("Average sample ratio: {}".format(s))
 
 if __name__ == "__main__":
+    np.random.seed(3)
     from inputsignal import Signal
     test_signal = Signal(4, [4, 6, 10, 15], strengths=[2, 4, 1, 1], noise_sd=0.01)
-    spright = SPRIGHT(
-        query_method="simple",
-        delays_method="nso",
-        reconstruct_method="nso",
-    )
-    residual = spright.transform(test_signal) - test_signal.signal_w
-    print("Residual energy: {0}".format(np.inner(residual, residual)))
+    test_one_method = False
+    if test_one_method:
+        spright = SPRIGHT(
+            query_method="simple",
+            delays_method="nso",
+            reconstruct_method="nso"
+        )
+        residual = spright.transform(test_signal, report=False) - test_signal.signal_w
+        print("Residual energy: {0}".format(np.inner(residual, residual)))
+    else:
+        configs = [
+            {"query_method" : "simple", "delays_method" : "identity_like", "reconstruct_method" : "mle"},
+            {"query_method" : "simple", "delays_method" : "random"       , "reconstruct_method" : "mle"},
+            {"query_method" : "simple", "delays_method" : "nso"          , "reconstruct_method" : "mle"},
+            {"query_method" : "simple", "delays_method" : "nso"          , "reconstruct_method" : "nso"}
+        ]
+        for config in configs:
+            SPRIGHT(**config).method_report(test_signal)
