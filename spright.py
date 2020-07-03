@@ -158,7 +158,7 @@ class SPRIGHT:
 
                 print("Multitons : {0}\n".format(multitons))
             
-            # raise RuntimeError("stop")
+            raise RuntimeError("stop")
             # WARNING: this is not a correct thing to do
             # in the last iteration of peeling, everything will be singletons and there
             # will be no multitons
