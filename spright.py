@@ -158,7 +158,7 @@ class SPRIGHT:
 
                 print("Multitons : {0}\n".format(multitons))
             
-            raise RuntimeError("stop")
+            # raise RuntimeError("stop")
             # WARNING: this is not a correct thing to do
             # in the last iteration of peeling, everything will be singletons and there
             # will be no multitons
@@ -217,7 +217,7 @@ class SPRIGHT:
         '''
         time_start = time.time()
         samples = 0
-        for _ in tqdm.trange(num_runs):
+        for i in tqdm.trange(num_runs):
             wht, num_samples = self.transform(signal, report=True)
             samples += num_samples
         return (time.time() - time_start) / num_runs, samples / (num_runs * 2 ** signal.n)
@@ -235,10 +235,10 @@ class SPRIGHT:
         print("Average sample ratio: {}".format(s))
 
 if __name__ == "__main__":
-    np.random.seed(11)
+    np.random.seed(9)
     from inputsignal import Signal
     test_signal = Signal(4, [4, 6, 10, 15], strengths=[2, 4, 1, 1], noise_sd=0.01)
-    test_one_method = True
+    test_one_method = False
     if test_one_method:
         spright = SPRIGHT(
             query_method="simple",
@@ -255,4 +255,7 @@ if __name__ == "__main__":
             {"query_method" : "simple", "delays_method" : "nso"          , "reconstruct_method" : "nso"}
         ]
         for config in configs:
-            SPRIGHT(**config).method_report(test_signal)
+            try:
+                SPRIGHT(**config).method_report(test_signal)
+            except KeyboardInterrupt:
+                continue
