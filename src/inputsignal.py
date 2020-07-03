@@ -31,8 +31,8 @@ class Signal:
     '''
     def __init__(self, n, loc, strengths=None, noise_sd=0):        
         self.n = n
-        # self.loc = loc#
-        # self.strengths = strengths
+        self.loc = loc # only for debug
+        self.strengths = strengths
         self.noise_sd = noise_sd
         N = 2 ** n
         if strengths is None:

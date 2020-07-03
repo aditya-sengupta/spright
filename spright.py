@@ -63,10 +63,13 @@ class SPRIGHT:
         wht : ndarray
         The WHT constructed by subsampling and peeling.
         '''
-
+        # check the condition for p_failure > eps
+        # upper bound on the number of peeling rounds, error out after that point
+        num_peeling = 0
         result = []
         wht = np.zeros_like(signal.signal_t)
         b = get_b(signal, method=self.query_method)
+        peeling_max = 2 ** b
         Ms = get_Ms(signal.n, b, method=self.query_method)
         Us, Ss = [], []
         singletons = {}
@@ -114,7 +117,7 @@ class SPRIGHT:
         # would be stored as the dictionary entry (0, 0): array([0, 1, 0, 0]).
         
         there_were_multitons = True
-        while there_were_multitons:
+        while there_were_multitons and num_peeling < peeling_max:
             if verbose:
                 print('-----')
                 print('the measurement matrix')
@@ -182,6 +185,7 @@ class SPRIGHT:
                 print(balls_to_peel)
             # peel
             for ball in balls_to_peel:
+                num_peeling += 1
                 k = dec_to_bin(ball, signal.n)
                 potential_peels = [(l, bin_to_dec(M.T.dot(k))) for l, M in enumerate(Ms)]
 
@@ -196,8 +200,10 @@ class SPRIGHT:
                         print(to_subtract)
                         print("Peeled ball {0} off bin {1}".format(bin_to_dec(k), peel))
             
+        loc = set()
         for k, value in result: # iterating over (i, j)s
             idx = bin_to_dec(k) # converting 'k's of singletons to decimals
+            loc.add(idx)
             if wht[idx] == 0:
                 wht[idx] = value
             else:
@@ -209,7 +215,7 @@ class SPRIGHT:
         if not report:
             return wht
         else:
-            return wht, len(used)
+            return wht, len(used), loc
 
     def method_test(self, signal, num_runs=10):
         '''
@@ -217,10 +223,13 @@ class SPRIGHT:
         '''
         time_start = time.time()
         samples = 0
+        successes = 0
         for i in tqdm.trange(num_runs):
-            wht, num_samples = self.transform(signal, report=True)
+            wht, num_samples, loc = self.transform(signal, report=True)
+            if loc == set(signal.loc):
+                successes += 1
             samples += num_samples
-        return (time.time() - time_start) / num_runs, samples / (num_runs * 2 ** signal.n)
+        return (time.time() - time_start) / num_runs, successes / num_runs, samples / (num_runs * 2 ** signal.n)
 
     def method_report(self, signal, num_runs=10):
         '''
@@ -230,14 +239,16 @@ class SPRIGHT:
             "Testing SPRIGHT with query method {0}, delays method {1}, reconstruct method {2}."
             .format(self.query_method, self.delays_method, self.reconstruct_method)
         )
-        t, s = self.method_test(signal, num_runs)
+        t, s, sam = self.method_test(signal, num_runs)
         print("Average time in seconds: {}".format(t))
-        print("Average sample ratio: {}".format(s))
+        print("Success ratio: {}".format(s))
+        print("Average sample ratio: {}".format(sam))
+
 
 if __name__ == "__main__":
-    np.random.seed(9)
+    np.random.seed(10)
     from inputsignal import Signal
-    test_signal = Signal(4, [4, 6, 10, 15], strengths=[2, 4, 1, 1], noise_sd=0.01)
+    test_signal = Signal(8, [4, 6, 10, 15, 24, 37, 48, 54], strengths=[2, 4, 1, 1, 1, 3, 8, 1], noise_sd=0)
     test_one_method = False
     if test_one_method:
         spright = SPRIGHT(
@@ -245,7 +256,7 @@ if __name__ == "__main__":
             delays_method="random",
             reconstruct_method="mle"
         )
-        residual = spright.transform(test_signal, verbose=True, report=False) - test_signal.signal_w
+        residual = spright.transform(test_signal, verbose=False, report=False) - test_signal.signal_w
         print("Residual energy: {0}".format(np.inner(residual, residual)))
     else:
         configs = [
@@ -259,3 +270,4 @@ if __name__ == "__main__":
                 SPRIGHT(**config).method_report(test_signal)
             except KeyboardInterrupt:
                 continue
+
