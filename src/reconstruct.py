@@ -6,8 +6,8 @@ Methods for the reconstruction engine; specifically, to
 '''
 
 import numpy as np
-from utils import bin_to_dec, dec_to_bin, binary_ints, sign, flip
-from query import compute_delayed_wht
+from .utils import bin_to_dec, dec_to_bin, binary_ints, sign, flip
+from .query import compute_delayed_wht
 
 def singleton_detection_noiseless(U_slice, **kwargs):
     '''

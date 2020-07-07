@@ -11,11 +11,10 @@ from matplotlib import pyplot as plt
 import sys
 import tqdm
 import time
-sys.path.append("src")
 
-from utils import fwht, dec_to_bin, bin_to_dec, binary_ints
-from query import compute_delayed_wht, get_Ms, get_b, get_D
-from reconstruct import singleton_detection
+from src.utils import fwht, dec_to_bin, bin_to_dec, binary_ints
+from src.query import compute_delayed_wht, get_Ms, get_b, get_D
+from src.reconstruct import singleton_detection
 
 class SPRIGHT:
     '''
@@ -33,19 +32,21 @@ class SPRIGHT:
     Currently implemented methods:
         "identity_like" : return a zero row and the identity matrix vertically stacked together.
         "random" : make a random set of delays.
+        "nso" : set delays according to the NSO-SPRIGHT algorithm.
 
     reconstruct_method : str
     The method to detect singletons.
     Currently implemented methods:
         "noiseless" : decode according to [2], section 4.2, with the assumption the signal is noiseless.
         "mle" : naive noisy decoding; decode by taking the maximum-likelihood singleton that could be at that bin.
+        "nso" : reconstruct according to the NSO-SPRIGHT algorithm.
     '''
     def __init__(self, query_method, delays_method, reconstruct_method):
         self.query_method = query_method
         self.delays_method = delays_method
         self.reconstruct_method = reconstruct_method
 
-    def transform(self, signal, verbose=False, report=False):
+    def transform(self, signal, verbose=False, report=False, Ms=None):
         '''
         Full SPRIGHT encoding and decoding. Implements Algorithms 1 and 2 from [2].
         (numbers) in the comments indicate equation numbers in [2].
@@ -68,9 +69,14 @@ class SPRIGHT:
         num_peeling = 0
         result = []
         wht = np.zeros_like(signal.signal_t)
-        b = get_b(signal, method=self.query_method)
+        if Ms is None:
+            b = get_b(signal, method=self.query_method)
+            Ms = get_Ms(signal.n, b, method=self.query_method)
+        else:
+            b = Ms[0].shape[1]
+        
         peeling_max = 2 ** b
-        Ms = get_Ms(signal.n, b, method=self.query_method)
+        
         Us, Ss = [], []
         singletons = {}
         multitons = []
@@ -117,7 +123,9 @@ class SPRIGHT:
         # would be stored as the dictionary entry (0, 0): array([0, 1, 0, 0]).
         
         there_were_multitons = True
-        while there_were_multitons and num_peeling < peeling_max:
+        iters = 0
+        max_iters = 2 * 2 ** b
+        while there_were_multitons and num_peeling < peeling_max and iters < max_iters:
             if verbose:
                 print('-----')
                 print('the measurement matrix')
@@ -161,7 +169,6 @@ class SPRIGHT:
 
                 print("Multitons : {0}\n".format(multitons))
             
-            # raise RuntimeError("stop")
             # WARNING: this is not a correct thing to do
             # in the last iteration of peeling, everything will be singletons and there
             # will be no multitons
@@ -184,6 +191,7 @@ class SPRIGHT:
                 print('these balls will be peeled')
                 print(balls_to_peel)
             # peel
+            iters += 1
             for ball in balls_to_peel:
                 num_peeling += 1
                 k = dec_to_bin(ball, signal.n)

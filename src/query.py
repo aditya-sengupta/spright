@@ -8,7 +8,7 @@ Methods for the query generator: specifically, to
 
 import numpy as np
 
-from utils import fwht, bin_to_dec, dec_to_bin, binary_ints
+from .utils import fwht, bin_to_dec, dec_to_bin, binary_ints
 
 def get_b_simple(signal):
     '''
@@ -34,7 +34,7 @@ def get_b(signal, method="simple"):
     The sparsity coefficient.
     '''
     return {
-        "simple" : get_b_simple
+        "simple" : get_b_simple,
     }.get(method)(signal)
 
 def get_Ms_simple(n, b, num_to_get=None):
