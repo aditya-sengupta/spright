@@ -20,7 +20,7 @@ num_to_get = n // b
 lam = 6 * (n / 4) ** 2
 
 num_runs = 1
-eps = 1e-17
+eps = 1e-15
 
 rv = stats.poisson(lam)
 p = rv.pmf(np.arange(2 ** n))
@@ -45,8 +45,12 @@ def proposal_func(num):
     return (num + 2 ** np.random.randint(num_to_get * n * b)) % (2 ** (num_to_get * n * b))
 
 def get_score(c):
+    '''
+    Gets a score for the pattern: if decoding fails or if all samples are looked at, returns eps. 
+    Else, returns (proportion of samples not used) + eps.
+    '''
     for _ in range(num_runs):
-        score = 0
+        negative_score = 0
         try:
             _, samples, loc = transform(signal, Ms=c, report=True)
         except KeyboardInterrupt:
@@ -56,8 +60,8 @@ def get_score(c):
         if not loc == set(signal.loc):
             return eps
         else:
-            score += - (samples - eps) / 2 ** n
-    return score / num_runs
+            negative_score += (samples - eps) / 2 ** n
+    return 1 + eps - negative_score / num_runs
 
 def scorer(current, candidate):
     return get_score(num_to_Ms(candidate)) / get_score(num_to_Ms(current))
@@ -98,12 +102,14 @@ def metropolis_hastings(proposal_func, init_func, score_func, num_iters, step=30
     return samples[::step]
 
 burn_in = 100
-# samples = metropolis_hastings(proposal_func, init_func, scorer, 10000, step=1)[burn_in:]
-# samples_as_ints = [bin_to_dec(np.array(x).flatten()) for x in samples]
-scores = np.empty(2 ** (num_to_get * n * b))
-for i in range(2 ** (num_to_get * n * b)):
-
+samples = metropolis_hastings(proposal_func, init_func, scorer, 10000, step=1)[burn_in:]
+samples_as_ints = [bin_to_dec(np.array(x).flatten()) for x in samples]
+'''scores = np.zeros(2 ** (num_to_get * n * b))
+for i in tqdm.trange(len(scores)):
+    scores[i] = get_score(num_to_Ms(i))'''
 best_int = max(set(samples_as_ints), key=samples_as_ints.count)
 best_mats = [x for x in dec_to_bin(best_int, num_to_get * n * b).reshape(num_to_get, n, b)]
+# best_int = np.argmax(scores)
+# best_mats = num_to_Ms(best_int)
 print("The best subsampling patterns for this signal are {}".format(best_mats))
 print("The average ratio of untouched samples for this pattern is {}".format(get_score(best_mats)))
